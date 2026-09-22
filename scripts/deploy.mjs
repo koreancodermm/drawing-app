@@ -11,27 +11,39 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const root = process.cwd()
-// 윈도에서는 npm이 npm.cmd라서 shell 없이 spawn하면 못 찾는다(ENOENT).
-const shell = process.platform === 'win32'
-const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { stdio: 'inherit', cwd: root, shell, ...opts })
-const runIn = (cwd, cmd, args) => execFileSync(cmd, args, { stdio: 'inherit', cwd, shell })
+// 윈도에서는 npm이 npm.cmd라서 shell 없이 spawn하면 못 찾는다(ENOENT). git·node는 .exe라 그대로 찾아지므로
+// npm만 shell로 돌린다(shell을 쓰면 인자의 공백이 그대로 나뉠 수 있어 다른 명령에는 쓰지 않는다).
+const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { stdio: 'inherit', cwd: root, ...opts })
+const runNpm = (args) => execFileSync('npm', args, { stdio: 'inherit', cwd: root, shell: process.platform === 'win32' })
+const runIn = (cwd, cmd, args) => execFileSync(cmd, args, { stdio: 'inherit', cwd })
 
 console.log('1) 검사와 빌드')
-run('npm', ['run', 'test'])
-run('npm', ['run', 'lint'])
-run('npm', ['run', 'build'])
+runNpm(['run', 'test'])
+runNpm(['run', 'lint'])
+runNpm(['run', 'build'])
 run('node', ['scripts/check-release.mjs'])
 
 const dist = join(root, 'dist')
 if (!existsSync(dist)) throw new Error('dist가 없습니다. 빌드가 실패한 것 같습니다.')
 
 console.log('2) gh-pages 브랜치 준비')
-const worktree = mkdtempSync(join(tmpdir(), 'gh-pages-'))
+// 이전 실행이 도중에 실패해 워크트리가 남아 있을 수 있으니 먼저 정리한다.
 try {
-  execFileSync('git', ['worktree', 'add', '-B', 'gh-pages', worktree], { cwd: root, stdio: 'inherit' })
+  execFileSync('git', ['worktree', 'list', '--porcelain'], { cwd: root })
+    .toString()
+    .split('\n\n')
+    .filter((b) => b.includes('branch refs/heads/gh-pages'))
+    .forEach((b) => {
+      const dir = b.match(/^worktree (.+)$/m)?.[1]
+      if (dir) execFileSync('git', ['worktree', 'remove', '--force', dir], { cwd: root, stdio: 'inherit' })
+    })
 } catch {
-  // 이미 gh-pages 워크트리가 있을 수 있다.
+  // 없으면 넘어간다.
 }
+execFileSync('git', ['worktree', 'prune'], { cwd: root })
+const worktree = mkdtempSync(join(tmpdir(), 'gh-pages-'))
+rmSync(worktree, { recursive: true, force: true }) // git worktree add가 빈 새 디렉터리를 만들게 한다
+execFileSync('git', ['worktree', 'add', '-B', 'gh-pages', worktree], { cwd: root, stdio: 'inherit' })
 runIn(worktree, 'git', ['rm', '-rf', '--quiet', '.'])
 cpSync(dist, worktree, { recursive: true })
 writeFileSync(join(worktree, '.nojekyll'), '')
@@ -43,7 +55,8 @@ try {
 }
 
 console.log('3) 올리기')
-runIn(worktree, 'git', ['push', '-u', 'origin', 'gh-pages'])
+// gh-pages는 매번 dist로 통째로 다시 만드는 배포용 브랜치라 강제 푸시한다(사람이 직접 손댈 일이 없다).
+runIn(worktree, 'git', ['push', '-u', 'origin', 'gh-pages', '--force'])
 
 run('git', ['worktree', 'remove', worktree, '--force'])
 rmSync(worktree, { recursive: true, force: true })
