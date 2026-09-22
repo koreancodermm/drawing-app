@@ -1,0 +1,99 @@
+/* AI 도우미 화면. 색은 앱의 CSS 변수만 쓴다(라이트·다크 모두 index.css에서 정의). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.ai-panel__modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.ai-panel__field {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.ai-panel__field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.ai-panel__result {
+  margin-top: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ai-key-input {
+  flex: 1 1 14em;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.ai-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--shadow);
+}
+
+.ai-modal__box {
+  box-sizing: border-box;
+  width: min(100%, 26rem);
+  max-height: 100%;
+  overflow: auto;
+  padding: 20px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.ai-modal__box h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+}
+
+.ai-modal__list {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+  line-height: 1.6;
+}
+
+.ai-modal__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
