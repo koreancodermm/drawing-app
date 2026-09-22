@@ -11,8 +11,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const root = process.cwd()
-const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { stdio: 'inherit', cwd: root, ...opts })
-const runIn = (cwd, cmd, args) => execFileSync(cmd, args, { stdio: 'inherit', cwd })
+// 윈도에서는 npm이 npm.cmd라서 shell 없이 spawn하면 못 찾는다(ENOENT).
+const shell = process.platform === 'win32'
+const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { stdio: 'inherit', cwd: root, shell, ...opts })
+const runIn = (cwd, cmd, args) => execFileSync(cmd, args, { stdio: 'inherit', cwd, shell })
 
 console.log('1) 검사와 빌드')
 run('npm', ['run', 'test'])

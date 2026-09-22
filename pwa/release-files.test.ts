@@ -83,9 +83,10 @@ describe('개인정보처리방침 초안 (AI를 뺀 출시)', () => {
     expect(html).not.toMatch(/Gemini|제미나이|API 키|구글로/)
   })
 
-  it('출시 전에 채울 곳이 표시되어 있다', () => {
-    expect(html).toContain('[시행일')
-    expect(html).toContain('[연락 가능한 이메일]')
+  it('시행일과 운영자·문의처 빈칸이 채워져 있다(더 이상 [대괄호] 안내가 없다)', () => {
+    expect(html).not.toMatch(/\[[^\]<]{2,80}\]/)
+    expect(html).toMatch(/시행일: \S/)
+    expect(html).toMatch(/운영자: \S+ · 문의: \S+@\S+/)
   })
 })
 
