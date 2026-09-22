@@ -73,3 +73,10 @@ Vite + React + TypeScript, 패키지 관리는 npm. 테스트는 Vitest, 코드 
 - 스토어 준비 문서는 `docs/store/`(AAB 만들기, 데이터 보안 답변, 등록 정보, 출시 전 점검표), 성능 결과는 `docs/performance-report.md`. 안드로이드 앱 설정 예시는 `twa/twa-manifest.json`(자리 표시 `CHANGE_ME`를 채워 쓴다).
 - 서명 키(`*.keystore`, `*.jks`)와 비밀번호는 저장소나 프로젝트 폴더에 두지 않는다(`.gitignore`가 막고 `pwa/release-files.test.ts`가 설정 파일에 비밀번호가 없는지 검사한다). 스토어 업로드와 계정 입력은 사람이 직접 한다.
 - 픽셀을 읽는 도구(`src/tools/engines/pixel.ts`)는 도장마다 큰 배열을 새로 만들지 않는다(작업 배열 재사용). 이 도구들은 획 하나에 도장이 수십~수백 개라 작은 낭비도 프레임을 넘긴다.
+
+## 배포 (GitHub Pages)
+
+- 사이트 주소: https://koreancodermm.github.io/drawing-app/ (저장소 `koreancodermm/drawing-app`, 공개 저장소, `gh-pages` 브랜치를 GitHub Pages가 그대로 보여준다).
+- 새 내용을 올리려면 `npm run deploy`(`scripts/deploy.mjs`)를 쓴다: 테스트·lint·빌드·`check-release.mjs`를 거쳐 `dist`를 `gh-pages` 브랜치에 올린다.
+- `main` 브랜치를 GitHub Actions로 자동 배포하려는 워크플로 파일이 `.github/workflows/deploy.yml`에 있지만, 이 저장소를 만들 때 쓴 GitHub CLI 인증에 `workflow` 권한이 없어 명령줄로는 올리지 못했다(웹 화면에서 직접 추가해야 한다, README 참고). 이 권한 제약이 없는 환경에서는 이 파일을 그대로 커밋해 자동 배포로 바꿀 수 있다.
+- base 경로는 상대 경로(`vite.config.ts`의 `base: './'`)라서 루트든 `/drawing-app/` 같은 하위 경로든 그대로 동작한다.

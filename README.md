@@ -22,4 +22,14 @@ npm run build    # 배포용 빌드(dist)
 
 ## 배포
 
-`main` 브랜치에 푸시하면 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)이 테스트·빌드 후 GitHub Pages에 올린다. AI 기능은 기본 빌드에서 빠져 있다(`docs/store/build-aab.md` 참고).
+GitHub Pages(`gh-pages` 브랜치)로 올라간다. 새 내용을 반영하려면:
+
+```bash
+npm run deploy
+```
+
+테스트·검사·빌드를 하고 `dist`를 `gh-pages` 브랜치에 올린다. 몇 분 뒤 사이트에 반영된다. AI 기능은 기본 빌드에서 빠져 있다(`docs/store/build-aab.md` 참고).
+
+### 자동 배포(선택)로 바꾸기
+
+`main`에 올릴 때마다 저절로 배포되게 하려면 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) 파일을 **GitHub 웹 화면**에서 저장소에 추가한다(이 저장소는 GitHub CLI 인증에 `workflow` 권한이 없어 명령줄로는 올리지 못했다). 저장소 페이지에서 "Add file → Create new file"로 같은 경로·내용을 붙여 넣고 커밋하면 된다. 그 뒤 저장소 설정의 Pages 소스를 "GitHub Actions"로 바꾸면 `npm run deploy`는 필요 없어진다.
