@@ -2,8 +2,10 @@ const MM_PER_INCH = 25.4
 const PT_PER_INCH = 72
 
 export interface PdfPageInput {
-  /** JPEG로 압축된 그림 바이트 */
-  jpeg: Uint8Array
+  /** JPEG로 압축된 그림 바이트(RGB) */
+  jpeg?: Uint8Array
+  /** CMYK 4채널 원본 바이트(압축 없음, 인쇄용 근사 내보내기에 쓴다) */
+  cmyk?: Uint8Array
   widthPx: number
   heightPx: number
   /** 종이 실제 크기(mm). PDF 쪽 크기가 된다. */
@@ -21,9 +23,11 @@ function fmt(n: number): string {
 
 /**
  * 그림 한 장을 종이 크기 그대로 담은 PDF를 만든다.
- * 그림은 JPEG(DCTDecode) 이미지 하나로 쪽 전체에 깔린다.
+ * jpeg를 주면 DeviceRGB(DCTDecode) 이미지로, cmyk를 주면 DeviceCMYK(압축 없는 원본 4채널) 이미지로 담는다.
+ * CMYK는 실제 인쇄소 프로파일이 아닌 표준 수식 근사치다(cmyk.ts 참고).
  */
 export function buildPdf(page: PdfPageInput): Uint8Array {
+  if (!page.jpeg && !page.cmyk) throw new Error('jpeg 또는 cmyk 중 하나는 있어야 한다.')
   const enc = new TextEncoder()
   const w = mmToPt(page.widthMm)
   const h = mmToPt(page.heightMm)
@@ -55,11 +59,20 @@ export function buildPdf(page: PdfPageInput): Uint8Array {
       '/Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
   )
   startObject(4)
-  text(
-    `<< /Type /XObject /Subtype /Image /Width ${page.widthPx} /Height ${page.heightPx} ` +
-      `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.jpeg.length} >>\nstream\n`,
-  )
-  push(page.jpeg)
+  if (page.cmyk) {
+    text(
+      `<< /Type /XObject /Subtype /Image /Width ${page.widthPx} /Height ${page.heightPx} ` +
+        `/ColorSpace /DeviceCMYK /BitsPerComponent 8 /Length ${page.cmyk.length} >>\nstream\n`,
+    )
+    push(page.cmyk)
+  } else {
+    const jpeg = page.jpeg!
+    text(
+      `<< /Type /XObject /Subtype /Image /Width ${page.widthPx} /Height ${page.heightPx} ` +
+        `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`,
+    )
+    push(jpeg)
+  }
   text('\nendstream\nendobj\n')
   startObject(5)
   text(`<< /Length ${content.length} >>\nstream\n`)

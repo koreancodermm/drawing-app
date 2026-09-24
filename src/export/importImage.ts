@@ -38,6 +38,22 @@ async function decode(file: Blob): Promise<{ source: CanvasImageSource; width: n
   }
 }
 
+/** 이미 화면에 있는 이미지(CanvasImageSource)를 새 레이어로 넣는 공통 로직. */
+function placeAsLayer(
+  session: DrawingSession,
+  source: CanvasImageSource,
+  width: number,
+  height: number,
+  name: string,
+  mode: ImportMode,
+): LayerInfo | null {
+  const r = fitRect(width, height, session.width, session.height, mode === 'background' ? 'cover' : 'contain')
+  return session.addLayerWithPixels(name, mode === 'background' ? 0 : undefined, (ctx) => {
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(source, r.x, r.y, r.w, r.h)
+  })
+}
+
 /**
  * 이미지 파일을 새 레이어로 넣는다.
  * background: 맨 아래 레이어로, 캔버스를 꽉 채운다. layer: 맨 위 레이어로, 잘리지 않게 맞춘다.
@@ -51,12 +67,21 @@ export async function importImageAsLayer(
 ): Promise<LayerInfo | null> {
   const image = await decode(file)
   try {
-    const r = fitRect(image.width, image.height, session.width, session.height, mode === 'background' ? 'cover' : 'contain')
-    return session.addLayerWithPixels(name, mode === 'background' ? 0 : undefined, (ctx) => {
-      ctx.imageSmoothingQuality = 'high'
-      ctx.drawImage(image.source, r.x, r.y, r.w, r.h)
-    })
+    return placeAsLayer(session, image.source, image.width, image.height, name, mode)
   } finally {
     image.close()
   }
+}
+
+/**
+ * 이미 캔버스에 있는 이미지(사진 보정 화면에서 만든 결과 등)를 새 레이어로 넣는다.
+ * 파일을 다시 읽지 않고 그대로 쓴다.
+ */
+export function importCanvasAsLayer(
+  session: DrawingSession,
+  canvas: HTMLCanvasElement,
+  name: string,
+  mode: ImportMode,
+): LayerInfo | null {
+  return placeAsLayer(session, canvas, canvas.width, canvas.height, name, mode)
 }

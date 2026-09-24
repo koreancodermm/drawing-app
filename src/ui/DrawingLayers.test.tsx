@@ -292,6 +292,10 @@ describe('파일 패널', () => {
     const file = new File([new Uint8Array([1, 2, 3])], '풍경.png', { type: 'image/png' })
     fireEvent.click(screen.getByRole('button', { name: '새 레이어로' }))
     fireEvent.change(input, { target: { files: [file] } })
+    // 사진 보정 화면이 먼저 뜬다. 보정 없이 그대로 불러온다.
+    const skip = await screen.findByRole('button', { name: '보정 없이 불러오기' })
+    await waitFor(() => expect(skip).toBeEnabled())
+    fireEvent.click(skip)
     await screen.findByText('이미지 불러오기 완료')
     expect(layerNames()).toEqual(['풍경', '레이어 1'])
   })
@@ -302,8 +306,36 @@ describe('파일 패널', () => {
     const input = screen.getByLabelText('이미지 파일 선택') as HTMLInputElement
     fireEvent.click(screen.getByRole('button', { name: '배경으로' }))
     fireEvent.change(input, { target: { files: [new File([new Uint8Array([1])], '하늘.jpg', { type: 'image/jpeg' })] } })
+    const skip = await screen.findByRole('button', { name: '보정 없이 불러오기' })
+    await waitFor(() => expect(skip).toBeEnabled())
+    fireEvent.click(skip)
     await screen.findByText('이미지 불러오기 완료')
     expect(layerNames()).toEqual(['레이어 1', '하늘'])
+  })
+
+  it('사진 보정 화면에서 취소하면 아무것도 불러오지 않는다', async () => {
+    await openNewDrawing()
+    vi.stubGlobal('createImageBitmap', async () => ({ width: 40, height: 20, close: () => {} }))
+    const input = screen.getByLabelText('이미지 파일 선택') as HTMLInputElement
+    fireEvent.click(screen.getByRole('button', { name: '새 레이어로' }))
+    fireEvent.change(input, { target: { files: [new File([new Uint8Array([1])], '메모.png', { type: 'image/png' })] } })
+    fireEvent.click(await screen.findByRole('button', { name: '취소' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(layerNames()).toEqual(['레이어 1'])
+  })
+
+  it('노출을 올려 적용하면 원본보다 밝은 픽셀이 들어간다', async () => {
+    await openNewDrawing()
+    vi.stubGlobal('createImageBitmap', async () => ({ width: 10, height: 10, close: () => {} }))
+    const input = screen.getByLabelText('이미지 파일 선택') as HTMLInputElement
+    fireEvent.click(screen.getByRole('button', { name: '새 레이어로' }))
+    fireEvent.change(input, { target: { files: [new File([new Uint8Array([1])], '사진.jpg', { type: 'image/jpeg' })] } })
+    const apply = await screen.findByRole('button', { name: '적용해서 불러오기' })
+    await waitFor(() => expect(apply).toBeEnabled())
+    fireEvent.change(screen.getByLabelText('노출'), { target: { value: '2' } })
+    fireEvent.click(apply)
+    await screen.findByText('이미지 불러오기 완료')
+    expect(layerNames()).toEqual(['사진', '레이어 1'])
   })
 })
 

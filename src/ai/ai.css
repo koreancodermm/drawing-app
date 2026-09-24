@@ -57,43 +57,9 @@
   font: inherit;
 }
 
-.ai-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: var(--shadow);
-}
-
-.ai-modal__box {
-  box-sizing: border-box;
-  width: min(100%, 26rem);
-  max-height: 100%;
-  overflow: auto;
-  padding: 20px;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
-.ai-modal__box h2 {
-  margin: 0 0 12px;
-  font-size: 1.15rem;
-}
-
-.ai-modal__list {
+/* 대화상자(.modal, .modal__box, .modal__buttons)는 index.css에 공통으로 있다(AI가 없어도 쓰는 화면이 있어서). */
+.modal__list {
   margin: 0 0 12px;
   padding-left: 1.2em;
   line-height: 1.6;
-}
-
-.ai-modal__buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
 }

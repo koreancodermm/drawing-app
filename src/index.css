@@ -1119,3 +1119,80 @@ a.btn {
   justify-content: center;
   text-decoration: none;
 }
+
+/* 공통 대화상자(모달): 사진 보정, CMYK 미리보기, AI 안내 등이 함께 쓴다 */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--shadow);
+}
+
+.modal__box {
+  box-sizing: border-box;
+  width: min(100%, 26rem);
+  max-height: 100%;
+  overflow: auto;
+  padding: 20px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.modal__box h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+}
+
+.modal__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* 사진 보정·CMYK 미리보기 화면 */
+.photo-adjust {
+  width: min(100%, 34rem);
+}
+
+.photo-adjust__preview {
+  display: block;
+  width: 100%;
+  max-height: 50vh;
+  margin: 0 0 12px;
+  object-fit: contain;
+  background: repeating-conic-gradient(var(--hover) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.photo-adjust__sliders {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.photo-adjust__slider {
+  display: grid;
+  grid-template-columns: 6.5em 1fr 4.5em;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.photo-adjust__slider input[type='range'] {
+  width: 100%;
+}
+
+.photo-adjust__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}

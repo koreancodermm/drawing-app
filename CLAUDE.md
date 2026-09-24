@@ -80,3 +80,11 @@ Vite + React + TypeScript, 패키지 관리는 npm. 테스트는 Vitest, 코드 
 - 새 내용을 올리려면 `npm run deploy`(`scripts/deploy.mjs`)를 쓴다: 테스트·lint·빌드·`check-release.mjs`를 거쳐 `dist`를 `gh-pages` 브랜치에 올린다.
 - `main` 브랜치를 GitHub Actions로 자동 배포하려는 워크플로 파일이 `.github/workflows/deploy.yml`에 있지만, 이 저장소를 만들 때 쓴 GitHub CLI 인증에 `workflow` 권한이 없어 명령줄로는 올리지 못했다(웹 화면에서 직접 추가해야 한다, README 참고). 이 권한 제약이 없는 환경에서는 이 파일을 그대로 커밋해 자동 배포로 바꿀 수 있다.
 - base 경로는 상대 경로(`vite.config.ts`의 `base: './'`)라서 루트든 `/drawing-app/` 같은 하위 경로든 그대로 동작한다.
+
+## 사진 보정과 인쇄용 CMYK 근사 (RAW·인쇄 관리의 현실적인 버전)
+
+- PRD 1장 "비목표"의 "포토샵 수준의 RAW 편집, 색상 프로파일(CMYK) 인쇄 관리"는 그대로는 이 앱(브라우저 캔버스) 구조로 만들 수 없다(카메라 RAW는 카메라별 색 보정표·디모자이킹이, 진짜 인쇄 색 관리는 인쇄소별 ICC 프로파일이 있어야 하는데 둘 다 브라우저에 없고 대체할 라이선스 엔진도 없다). 대신 정직하게 쓸모 있는 근사 버전만 만든다.
+- **사진 보정**(`src/import/photoAdjust.ts`): 이미지 불러오기(파일 선택) 시 항상 `src/ui/PhotoAdjust.tsx` 모달을 먼저 띄운다. 노출·R/G/B 화이트밸런스·검정점/흰점(레벨)·감마·밝은 영역/어두운 영역을 채널당 256칸 LUT로 계산해 적용한다(픽셀마다 다시 계산하지 않는다). "보정 없이 불러오기"·"취소"도 있다. RAW 파일(.CR2 등) 자체는 못 연다는 안내를 화면에 항상 보여준다.
+- 이미지 불러오기 흐름은 `DrawingScreen.importImage` → PhotoAdjust 모달(사용자가 고름) → `importCanvasAsLayer`(캔버스를 직접 레이어에 넣음, 파일을 다시 디코드하지 않음)이다. `importImageAsLayer`(Blob 입력)는 예전 그대로 남아 있다(공유 로직은 `placeAsLayer`).
+- **CMYK 근사**(`src/export/cmyk.ts`): 표준 수식(K=1-max(R,G,B) 등)으로만 변환한다. "인쇄 미리보기"는 RGB→CMYK→RGB 왕복(잉크로 못 내는 색이 뭉개지는 것만 보여줌)이고, "CMYK PDF (근사)"는 `buildPdf`의 `/ColorSpace /DeviceCMYK` 경로(압축 없는 원본 4채널, `CMYK_MAX_PIXELS`보다 큰 용지는 거절)로 만든다. 화면 문구에 "실제 인쇄소 프로파일과 다를 수 있다"를 항상 남긴다 — 이 근사치를 "정확한 인쇄 색"인 것처럼 표현하지 않는다.
+- 공통 대화상자 CSS는 `.modal`/`.modal__box`/`.modal__buttons`(index.css)에 있다. AI 안내(`AiConsent`)도 같은 클래스를 쓴다(AI를 뺀 빌드에서도 이 CSS는 필요해서 index.css에 둔다, `ai.css`에는 안 둔다).

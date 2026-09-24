@@ -7,7 +7,7 @@ import { DrawingSession } from '../canvas/session'
 import type { Stroke, StrokePoint } from '../canvas/stroke'
 import { clampZoom, fitView, keepVisible, zoomAt, type View } from '../canvas/viewport'
 import { renderExport, safeFileName, downloadBlob, type ExportFormat } from '../export'
-import { importImageAsLayer, type ImportMode } from '../export/importImage'
+import { importCanvasAsLayer, type ImportMode } from '../export/importImage'
 import { hexToRgb } from '../tools/geom'
 import {
   rectRegion,
@@ -30,6 +30,7 @@ import { aiPlugin } from './aiHost'
 import { getClipboard, setClipboard } from './clipboard'
 import FilePanel from './FilePanel'
 import LayerPanel from './LayerPanel'
+import PhotoAdjust from './PhotoAdjust'
 import SelectionPanel from './SelectionPanel'
 import ThemeToggle from './ThemeToggle'
 import ToolOptions from './ToolOptions'
@@ -771,9 +772,10 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
     else setHexDraft(color)
   }
 
-  // ---- AI 도우미(src/ai가 있을 때만 화면에 나온다) ----
+  // 지금 그림(보이는 레이어를 합친 것)을 캔버스로 돌려준다. AI 도우미와 인쇄 미리보기가 함께 쓴다.
+  const getFlattenedCanvas = () => sessionRef.current?.flatten(spec.background) ?? null
 
-  const getAiCanvas = () => sessionRef.current?.flatten(spec.background) ?? null
+  /** AI 도우미(src/ai가 있을 때만 화면에 나온다) */
 
   /** AI가 추천한 색을 "최근 사용한 색"(팔레트)에 넣는다. 그림은 바꾸지 않는다. */
   const addAiColors = (colors: string[]) => {
@@ -907,14 +909,36 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
     downloadBlob(new Blob([bytes as BlobPart], { type: 'application/octet-stream' }), `${safeFileName(drawing.name)}.draw`)
   }
 
-  const importImage = async (file: File, mode: ImportMode) => {
-    const session = sessionRef.current
-    if (!session) throw new Error('그림이 아직 준비되지 않았습니다.')
-    const name = file.name.replace(/\.[^.]+$/, '') || '이미지'
-    const info = await importImageAsLayer(session, file, name, mode)
-    if (!info) throw new Error('레이어를 더 만들 수 없어 이미지를 불러오지 못했습니다.')
-    setActiveLayerId(info.id)
-  }
+  /** 사진 보정 화면(PhotoAdjust)이 뜬 동안의 요청. 사용자가 적용·건너뛰기·취소를 고르면 채워진다. */
+  const [photoAdjust, setPhotoAdjust] = useState<{ file: File } | null>(null)
+  const photoAdjustDone = useRef<((canvas: HTMLCanvasElement | null) => void) | null>(null)
+
+  /** 이미지 파일을 고르면 먼저 보정 화면을 띄우고, 사용자가 정한 결과(또는 취소)를 레이어에 반영한다. */
+  const importImage = (file: File, mode: ImportMode): Promise<void> =>
+    new Promise((resolve, reject) => {
+      photoAdjustDone.current = (canvas) => {
+        setPhotoAdjust(null)
+        photoAdjustDone.current = null
+        if (!canvas) {
+          reject(new Error('이미지 불러오기를 취소했습니다.'))
+          return
+        }
+        const session = sessionRef.current
+        if (!session) {
+          reject(new Error('그림이 아직 준비되지 않았습니다.'))
+          return
+        }
+        const name = file.name.replace(/\.[^.]+$/, '') || '이미지'
+        const info = importCanvasAsLayer(session, canvas, name, mode)
+        if (!info) {
+          reject(new Error('레이어를 더 만들 수 없어 이미지를 불러오지 못했습니다.'))
+          return
+        }
+        setActiveLayerId(info.id)
+        resolve()
+      }
+      setPhotoAdjust({ file })
+    })
 
   const goHome = async () => {
     try {
@@ -1195,9 +1219,14 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
             onOpacity={(layerId, opacity) => layerOp({ op: 'set', id: layerId, key: 'opacity', value: opacity })}
           />
 
-          {aiPlugin && <aiPlugin.Panel getCanvas={getAiCanvas} onAddColors={addAiColors} />}
+          {aiPlugin && <aiPlugin.Panel getCanvas={getFlattenedCanvas} onAddColors={addAiColors} />}
 
-          <FilePanel onExport={exportDrawing} onSaveDrawFile={saveDrawFile} onImportImage={importImage} />
+          <FilePanel
+            onExport={exportDrawing}
+            onSaveDrawFile={saveDrawFile}
+            onImportImage={importImage}
+            getCanvas={getFlattenedCanvas}
+          />
         </aside>
       </div>
 
@@ -1209,6 +1238,8 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
           색·레이어·파일
         </button>
       </nav>
+
+      {photoAdjust && <PhotoAdjust file={photoAdjust.file} onDone={(canvas) => photoAdjustDone.current?.(canvas)} />}
     </div>
   )
 }

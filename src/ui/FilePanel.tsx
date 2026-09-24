@@ -1,19 +1,23 @@
 import { useRef, useState } from 'react'
 import type { ExportFormat } from '../export'
 import type { ImportMode } from '../export/importImage'
+import CmykPreview from './CmykPreview'
 
 interface Props {
   disabled?: boolean
   onExport: (format: ExportFormat, options: { transparent: boolean }) => Promise<void>
   onSaveDrawFile: () => Promise<void>
   onImportImage: (file: File, mode: ImportMode) => Promise<void>
+  /** 인쇄 미리보기용으로 지금 그림(보이는 레이어를 합친 것)을 캔버스로 돌려준다 */
+  getCanvas: () => HTMLCanvasElement | null
 }
 
-/** 내보내기(PNG·JPG·PDF), 앱 파일(.draw) 저장, 이미지 불러오기 */
-export default function FilePanel({ disabled, onExport, onSaveDrawFile, onImportImage }: Props) {
+/** 내보내기(PNG·JPG·PDF·CMYK 근사), 앱 파일(.draw) 저장, 이미지 불러오기(보정 포함) */
+export default function FilePanel({ disabled, onExport, onSaveDrawFile, onImportImage, getCanvas }: Props) {
   const [transparent, setTransparent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const [cmykPreview, setCmykPreview] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const modeRef = useRef<ImportMode>('layer')
 
@@ -56,6 +60,19 @@ export default function FilePanel({ disabled, onExport, onSaveDrawFile, onImport
         PNG는 배경(종이 색) 없이 투명하게
       </label>
 
+      <h3>인쇄 준비 (근사)</h3>
+      <p className="panel-empty">
+        표준 수식으로 CMYK를 흉내 낼 뿐, 실제 인쇄소 색(ICC 프로파일)과는 다를 수 있습니다.
+      </p>
+      <div className="file-panel__buttons">
+        <button className="btn" disabled={disabled} onClick={() => setCmykPreview(true)}>
+          인쇄 미리보기
+        </button>
+        <button className="btn" disabled={disabled || busy} onClick={() => void run('CMYK PDF 내보내기', () => onExport('cmyk-pdf', { transparent: false }))}>
+          CMYK PDF (근사)
+        </button>
+      </div>
+
       <h3>이미지 불러오기</h3>
       <div className="file-panel__buttons">
         <button className="btn" disabled={disabled || busy} onClick={() => pickImage('background')}>
@@ -91,6 +108,8 @@ export default function FilePanel({ disabled, onExport, onSaveDrawFile, onImport
           {message.text}
         </p>
       )}
+
+      {cmykPreview && <CmykPreview getCanvas={getCanvas} onClose={() => setCmykPreview(false)} />}
     </section>
   )
 }

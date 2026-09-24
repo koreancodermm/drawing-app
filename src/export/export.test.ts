@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DrawingSession } from '../canvas/session'
 import { installFakeCanvas } from '../test-utils/fakeCanvas'
-import { renderExport, safeFileName } from './index'
+import { CMYK_MAX_PIXELS, renderExport, safeFileName } from './index'
 import { fitRect } from './importImage'
 import { buildPdf, mmToPt } from './pdf'
 
@@ -44,6 +44,20 @@ describe('buildPdf', () => {
   it('B2(500×707mm)도 쪽 크기가 맞다', () => {
     const b2 = text(buildPdf({ jpeg, widthPx: 2953, heightPx: 4175, widthMm: 500, heightMm: 707 }))
     expect(b2).toContain(`/MediaBox [0 0 ${mmToPt(500).toFixed(2)} ${mmToPt(707).toFixed(2)}]`)
+  })
+
+  it('jpeg도 cmyk도 없으면 만들지 못한다', () => {
+    expect(() => buildPdf({ widthPx: 10, heightPx: 10, widthMm: 10, heightMm: 10 })).toThrow()
+  })
+
+  it('cmyk를 주면 DeviceCMYK 이미지가 압축 없이 그대로 들어간다', () => {
+    const cmyk = new Uint8Array([0, 0, 0, 255, 10, 20, 30, 40])
+    const pdf = buildPdf({ cmyk, widthPx: 1, heightPx: 2, widthMm: 210, heightMm: 297 })
+    const s = text(pdf)
+    expect(s).toContain('/ColorSpace /DeviceCMYK')
+    expect(s).not.toContain('/Filter')
+    const at = s.indexOf('stream\n', s.indexOf('DeviceCMYK')) + 'stream\n'.length
+    expect([...pdf.slice(at, at + cmyk.length)]).toEqual([...cmyk])
   })
 })
 
@@ -126,5 +140,22 @@ describe('renderExport', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((cb: BlobCallback) => cb(null))
     const session = new DrawingSession({ width: 100, height: 80 })
     await expect(renderExport(session, spec, 'png')).rejects.toThrow(/이미지를 만들지 못했습니다/)
+  })
+
+  it('CMYK PDF는 DeviceCMYK 이미지를 담은 application/pdf 파일이다(근사치)', async () => {
+    const session = new DrawingSession({ width: 100, height: 80 })
+    const pdf = await renderExport(session, spec, 'cmyk-pdf')
+    expect(pdf.extension).toBe('pdf')
+    expect(pdf.blob.type).toBe('application/pdf')
+    const text2 = new TextDecoder('latin1').decode(new Uint8Array(await pdf.blob.arrayBuffer()))
+    expect(text2).toContain('/ColorSpace /DeviceCMYK')
+    expect(text2).toContain(`/Width ${spec.widthPx} /Height ${spec.heightPx}`)
+  })
+
+  it('너무 큰 용지는 CMYK 내보내기를 거절한다', async () => {
+    const big = { ...spec, widthPx: 6000, heightPx: 6000 }
+    expect(big.widthPx * big.heightPx).toBeGreaterThan(CMYK_MAX_PIXELS)
+    const session = new DrawingSession({ width: big.widthPx, height: big.heightPx })
+    await expect(renderExport(session, big, 'cmyk-pdf')).rejects.toThrow(/너무 큽니다/)
   })
 })
