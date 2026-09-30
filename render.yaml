@@ -6,7 +6,6 @@ services:
   - type: web
     runtime: static
     name: drawing-app
-    plan: free
     branch: main
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
