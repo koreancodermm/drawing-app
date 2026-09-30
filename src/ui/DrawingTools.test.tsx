@@ -72,6 +72,27 @@ describe('도구 고르기와 쓰기', () => {
     expect(screen.getByRole('button', { name: '되돌리기' })).toBeDisabled()
   })
 
+  it('색 패널의 "스포이드" 버튼은 한 번 집으면 쓰던 도구로 돌아온다', async () => {
+    await openNewDrawing()
+    fireEvent.click(screen.getByRole('button', { name: '볼펜' }))
+    fireEvent.click(screen.getByRole('button', { name: '캔버스에서 색 뽑기' }))
+    expect(screen.getByRole('button', { name: '볼펜' })).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.pointerDown(viewport(), pointerAt(30, 30))
+    fireEvent.pointerUp(viewport(), pointerAt(30, 30))
+    expect((screen.getByLabelText('HEX 색 코드') as HTMLInputElement).value).toBe('#ffffff')
+    expect(screen.getByRole('button', { name: '볼펜' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('⇄ 버튼을 누르면 색1과 보조 색(기본 흰색)이 맞바뀐다', async () => {
+    await openNewDrawing()
+    const hex = screen.getByLabelText('HEX 색 코드') as HTMLInputElement
+    fireEvent.change(hex, { target: { value: '#112233' } })
+    fireEvent.click(screen.getByRole('button', { name: '색1과 보조 색 맞바꾸기' }))
+    expect(hex.value).toBe('#ffffff')
+    fireEvent.click(screen.getByRole('button', { name: '색1과 보조 색 맞바꾸기' }))
+    expect(hex.value).toBe('#112233')
+  })
+
   it('사각 선택을 하면 선택 영역 안내가 나오고 Esc로 풀린다', async () => {
     await openNewDrawing()
     chooseTool('선택·보조', '사각 선택')

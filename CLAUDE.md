@@ -88,3 +88,10 @@ Vite + React + TypeScript, 패키지 관리는 npm. 테스트는 Vitest, 코드 
 - 이미지 불러오기 흐름은 `DrawingScreen.importImage` → PhotoAdjust 모달(사용자가 고름) → `importCanvasAsLayer`(캔버스를 직접 레이어에 넣음, 파일을 다시 디코드하지 않음)이다. `importImageAsLayer`(Blob 입력)는 예전 그대로 남아 있다(공유 로직은 `placeAsLayer`).
 - **CMYK 근사**(`src/export/cmyk.ts`): 표준 수식(K=1-max(R,G,B) 등)으로만 변환한다. "인쇄 미리보기"는 RGB→CMYK→RGB 왕복(잉크로 못 내는 색이 뭉개지는 것만 보여줌)이고, "CMYK PDF (근사)"는 `buildPdf`의 `/ColorSpace /DeviceCMYK` 경로(압축 없는 원본 4채널, `CMYK_MAX_PIXELS`보다 큰 용지는 거절)로 만든다. 화면 문구에 "실제 인쇄소 프로파일과 다를 수 있다"를 항상 남긴다 — 이 근사치를 "정확한 인쇄 색"인 것처럼 표현하지 않는다.
 - 공통 대화상자 CSS는 `.modal`/`.modal__box`/`.modal__buttons`(index.css)에 있다. AI 안내(`AiConsent`)도 같은 클래스를 쓴다(AI를 뺀 빌드에서도 이 CSS는 필요해서 index.css에 둔다, `ai.css`에는 안 둔다).
+
+## 색 고르기 (ColorPicker)
+
+- 색 패널에는 채도·명도 사각형 + 색상 막대로 된 `src/ui/ColorPicker.tsx`가 있다. OS 기본 색상 선택창(`<input type=color>`)은 화면마다 생김새가 달라 "색상 선택(운영체제 선택창)"이라는 작은 미리보기 버튼으로만 남겨 두었다.
+- hsv 변환 함수(`rgbToHsv`, `hsvToRgb`, `hexToHsv`, `hsvToHex`, `rgbToHex`)는 `src/canvas/color.ts`에 있다. `hexToRgb`는 `src/tools/geom.ts`의 것을 그대로 쓴다(중복 구현 금지).
+- 색 패널의 "스포이드" 버튼은 도구를 스포이드로 잠깐 바꿨다가, 캔버스에서 한 번 집으면 원래 쓰던 도구로 자동으로 돌아온다(`DrawingScreen`의 `quickPickRef`). "⇄" 버튼은 색1과 보조 색(`color2`)을 맞바꾼다.
+- `ColorPicker`는 밖에서 `value`가 바뀌면(스와치·스포이드·되돌리기 등) 내부 상태를 그 값에 맞춘다. 단, 사각형을 끄는 도중(`pointerdown`~`pointerup` 사이)에는 덮어쓰지 않는다 — 이 사이에 `pointerup`을 빼먹고 테스트하면 내부 상태가 멈춰 있는 것처럼 보이니 주의한다.

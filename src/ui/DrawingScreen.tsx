@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import { addRecentColor, normalizeHex } from '../canvas/color'
+import { addRecentColor, normalizeHex, rgbToHex } from '../canvas/color'
 import { FIRST_LAYER_ID, type LayerInfo, type LayerOp } from '../canvas/layers'
 import type { CanvasSpec } from '../canvas/paper'
 import { DrawingSession } from '../canvas/session'
@@ -28,6 +28,7 @@ import { encodeStroke, type UiState } from '../storage/snapshot'
 import { renderThumbnail } from '../storage/thumbnail'
 import { aiPlugin } from './aiHost'
 import { getClipboard, setClipboard } from './clipboard'
+import ColorPicker from './ColorPicker'
 import FilePanel from './FilePanel'
 import LayerPanel from './LayerPanel'
 import PhotoAdjust from './PhotoAdjust'
@@ -113,10 +114,6 @@ function regionPath(region: Region): string {
     .join(' ')
 }
 
-function toHex(r: number, g: number, b: number): string {
-  return `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`
-}
-
 export default function DrawingScreen({ drawing, recentColors, onRecentColorsChange, onHome }: Props) {
   const { id, spec } = drawing
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -157,6 +154,8 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
   const pinchRef = useRef<{ dist: number; cx: number; cy: number; view: View } | null>(null)
   const gestureLock = useRef(false)
   const penSeen = useRef(false)
+  /** 색 패널의 "캔버스에서 뽑기" 버튼으로 도구를 잠깐 스포이드로 바꿨을 때, 되돌아갈 원래 도구 id */
+  const quickPickRef = useRef<string | null>(null)
   const selectionRef = useRef<Region | null>(null)
   const lassoRef = useRef<StrokePoint[]>([])
   const dragStart = useRef<StrokePoint | null>(null)
@@ -526,7 +525,26 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
     const [r, g, b, a] = session.sampleColor(pt.x, pt.y)
     const [br, bg, bb] = hexToRgb(spec.background)
     const t = a / 255
-    pickColor(toHex(r * t + br * (1 - t), g * t + bg * (1 - t), b * t + bb * (1 - t)))
+    pickColor(rgbToHex(r * t + br * (1 - t), g * t + bg * (1 - t), b * t + bb * (1 - t)))
+    // 색 패널의 "캔버스에서 뽑기" 버튼으로 들어온 것이면, 한 번 집고 원래 쓰던 도구로 돌아간다.
+    if (quickPickRef.current) {
+      setToolId(quickPickRef.current)
+      quickPickRef.current = null
+    }
+  }
+
+  /** 색 패널의 스포이드 버튼: 도구를 한 번만 바꿔 캔버스에서 색을 집고, 쓰던 도구로 자동으로 돌아온다. */
+  const startQuickPick = () => {
+    if (toolId === 'eyedropper') return
+    quickPickRef.current = toolId
+    setToolId('eyedropper')
+  }
+
+  /** 색1·색2를 맞바꾼다. */
+  const swapColors = () => {
+    setColor(color2)
+    setColor2(color)
+    setHexDraft(color2)
   }
 
   /** 지금 레이어에 그릴 수 있는지 확인하고, 안 되면 이유를 알려 준다. */
@@ -1110,12 +1128,14 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
         <aside className={`draw__panel sheet sheet--panel${sheet === 'panel' ? ' is-open' : ''}`} aria-label="색, 도구 옵션, 레이어, 파일">
           <section className="panel-block">
             <h2>색</h2>
+            <ColorPicker value={color} onChange={pickColor} label="색" />
             <div className="color-row">
               <input
                 type="color"
+                className="color-preview"
                 value={color}
                 onChange={(e) => pickColor(e.target.value)}
-                aria-label="색상 선택"
+                aria-label="색상 선택(운영체제 선택창)"
               />
               <input
                 type="text"
@@ -1134,6 +1154,18 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
                   if (e.key === 'Enter') commitHex()
                 }}
               />
+              <button
+                className="btn"
+                onClick={startQuickPick}
+                aria-pressed={toolId === 'eyedropper'}
+                aria-label="캔버스에서 색 뽑기"
+                title="캔버스에서 색 뽑기"
+              >
+                스포이드
+              </button>
+              <button className="btn" onClick={swapColors} title="색1·보조 색 맞바꾸기" aria-label="색1과 보조 색 맞바꾸기">
+                ⇄
+              </button>
             </div>
             <div className="swatches" role="group" aria-label="기본 색">
               {SWATCHES.map((c) => (
