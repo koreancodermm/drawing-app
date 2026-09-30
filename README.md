@@ -4,7 +4,7 @@
 
 ## 써 보기
 
-**[그림 그리기 열기](https://koreancodermm.github.io/drawing-app/)** — Render로 옮기는 중입니다. Render 주소가 정해지면 이 링크를 그 주소로 바꿉니다(아래 "Render 배포" 참고). 그동안은 GitHub Pages 주소가 그대로 열립니다.
+**[그림 그리기 열기](https://drawing-app-xmmn.onrender.com/)**
 
 폰이나 컴퓨터의 브라우저로 위 주소를 열고 "앱으로 설치"를 누르면 홈 화면에 추가되어 인터넷 없이도 쓸 수 있습니다.
 
@@ -20,20 +20,20 @@ npm run build    # 배포용 빌드(dist)
 
 자세한 규칙은 [CLAUDE.md](CLAUDE.md), 기능 명세는 [PRD.md](PRD.md)를 본다.
 
-## Render 배포 (새 방식, 자동)
+## Render 배포 (지금 쓰는 방식, 자동)
 
-[render.yaml](render.yaml)이 있어서, Render 계정으로 이 GitHub 저장소를 연결하면 **`main`에 올릴 때마다 저절로 빌드·배포**된다(별도 명령 없이). 한 번만 연결하면 된다:
+Render 계정에 이 GitHub 저장소를 연결해 두었다([render.yaml](render.yaml) 설정 그대로). **`main`에 올릴 때마다 Render가 저절로 빌드·배포한다** — 별도 명령이 필요 없다. 연결을 다시 하거나 다른 계정으로 옮기고 싶으면:
 
-1. [render.com](https://render.com)에서 무료 계정을 만들고 GitHub 계정으로 로그인한다(본인이 직접 해야 한다).
+1. [render.com](https://render.com)에서 계정을 만들고 GitHub 계정으로 로그인한다(본인이 직접 해야 한다).
 2. 대시보드에서 "New +" → "Blueprint"를 고르고 `koreancodermm/drawing-app` 저장소를 연결한다. `render.yaml`을 자동으로 읽어 정적 사이트(Static Site) 하나를 만든다.
    - Blueprint가 안 보이면 "New +" → "Static Site"로 직접 만들고 Build Command에 `npm ci && npm run build`, Publish Directory에 `dist`를 넣는다.
-3. 처음 배포가 끝나면 Render가 `https://<서비스 이름>.onrender.com` 형태의 주소를 준다. 그 주소를 알려 주면 이 README와 `docs/store/`의 주소를 그 주소로 바꿔 둔다.
+   - 주소에 쓸 이름(`https://이름.onrender.com`)은 그 화면의 서비스 "Name" 칸에서 정한다. 이미 남이 쓰는 이름이면 Render가 알아서 뒤에 글자를 붙인다(지금 주소 `drawing-app-xmmn`이 그 경우다).
 
 무료 요금제는 한동안 안 쓰면 잠들었다가 다음 방문 때 몇 초~수십 초 늦게 깨어날 수 있다.
 
-## GitHub Pages (예전 방식, 지금도 동작함)
+## GitHub Pages (예전 방식, 지금도 살아있음)
 
-`gh-pages` 브랜치로 올라간다. Render로 옮기기 전까지, 또는 Render와 별개로 계속 쓰고 싶으면 새 내용을 이렇게 반영한다:
+`gh-pages` 브랜치로 올라간다. Render로 옮기기 전에 쓰던 방식이라 지금은 관리하지 않지만, 새 내용을 반영하려면 여전히 이렇게 하면 된다:
 
 ```bash
 npm run deploy
