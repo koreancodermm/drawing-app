@@ -74,12 +74,12 @@ Vite + React + TypeScript, 패키지 관리는 npm. 테스트는 Vitest, 코드 
 - 서명 키(`*.keystore`, `*.jks`)와 비밀번호는 저장소나 프로젝트 폴더에 두지 않는다(`.gitignore`가 막고 `pwa/release-files.test.ts`가 설정 파일에 비밀번호가 없는지 검사한다). 스토어 업로드와 계정 입력은 사람이 직접 한다.
 - 픽셀을 읽는 도구(`src/tools/engines/pixel.ts`)는 도장마다 큰 배열을 새로 만들지 않는다(작업 배열 재사용). 이 도구들은 획 하나에 도장이 수십~수백 개라 작은 낭비도 프레임을 넘긴다.
 
-## 배포 (GitHub Pages)
+## 배포 (Render로 옮기는 중 + GitHub Pages)
 
-- 사이트 주소: https://koreancodermm.github.io/drawing-app/ (저장소 `koreancodermm/drawing-app`, 공개 저장소, `gh-pages` 브랜치를 GitHub Pages가 그대로 보여준다).
-- 새 내용을 올리려면 `npm run deploy`(`scripts/deploy.mjs`)를 쓴다: 테스트·lint·빌드·`check-release.mjs`를 거쳐 `dist`를 `gh-pages` 브랜치에 올린다.
-- `main` 브랜치를 GitHub Actions로 자동 배포하려는 워크플로 파일이 `.github/workflows/deploy.yml`에 있지만, 이 저장소를 만들 때 쓴 GitHub CLI 인증에 `workflow` 권한이 없어 명령줄로는 올리지 못했다(웹 화면에서 직접 추가해야 한다, README 참고). 이 권한 제약이 없는 환경에서는 이 파일을 그대로 커밋해 자동 배포로 바꿀 수 있다.
-- base 경로는 상대 경로(`vite.config.ts`의 `base: './'`)라서 루트든 `/drawing-app/` 같은 하위 경로든 그대로 동작한다.
+- **Render(새 방식, 진행 중)**: 저장소 루트의 `render.yaml`이 정적 사이트 설정(빌드 `npm ci && npm run build`, 배포 폴더 `dist`)을 담고 있다. 사용자가 Render 계정을 만들고 이 GitHub 저장소(`koreancodermm/drawing-app`)를 연결하면(계정 생성·연결은 사람이 직접 해야 한다) 그 뒤로는 `main`에 올릴 때마다 Render가 저절로 빌드·배포한다 — GitHub Actions를 안 쓰므로 `workflow` 권한 문제 자체가 없다. Render 주소(`https://<서비스 이름>.onrender.com`)가 정해지면 README·`docs/store/`의 주소를 그걸로 바꾼다. `.node-version`(22)으로 Render의 Node 버전을 맞춘다.
+- **GitHub Pages(예전 방식, 지금도 동작함)**: 사이트 주소 https://koreancodermm.github.io/drawing-app/ (공개 저장소의 `gh-pages` 브랜치를 그대로 보여준다). 새 내용을 올리려면 `npm run deploy`(`scripts/deploy.mjs`)를 쓴다: 테스트·lint·빌드·`check-release.mjs`를 거쳐 `dist`를 `gh-pages` 브랜치에 강제로 올린다(이 브랜치는 항상 `dist`로 통째로 다시 만드는 배포용이라 강제 푸시가 맞다).
+- `main` 브랜치를 GitHub Actions로 자동 배포하려는 워크플로 파일이 `.github/workflows/deploy.yml`에 있지만, 이 저장소를 만들 때 쓴 GitHub CLI 인증에 `workflow` 권한이 없어 명령줄로는 올리지 못했다(웹 화면에서 직접 추가해야 한다). Render로 옮기면 이 파일은 필요 없어진다.
+- base 경로는 상대 경로(`vite.config.ts`의 `base: './'`)라서 루트든 `/drawing-app/` 같은 하위 경로든(GitHub Pages) 그대로 동작하고, Render의 루트 도메인에서도 그대로 동작한다.
 
 ## 사진 보정과 인쇄용 CMYK 근사 (RAW·인쇄 관리의 현실적인 버전)
 

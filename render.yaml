@@ -1,0 +1,18 @@
+# Render(render.com) 배포 설정(Blueprint). Render 대시보드에서
+# "New + → Blueprint"로 이 저장소를 고르면 아래 내용을 그대로 읽어 정적 사이트를 만든다.
+# (수동으로 "New + → Static Site"를 골라도 되며, 그때는 build command와 publish directory를
+# 아래 값과 똑같이 직접 입력하면 된다.)
+services:
+  - type: web
+    runtime: static
+    name: drawing-app
+    plan: free
+    branch: main
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: false
+    headers:
+      # 서비스 워커는 항상 최신 것을 받아야 업데이트가 곧바로 퍼진다(오래 캐시되면 안 된다).
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache

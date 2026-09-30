@@ -8,7 +8,7 @@
 
 | 항목 | 설명 |
 | --- | --- |
-| **웹 주소(HTTPS)** | 앱이 실제로 올라가 있어야 한다. TWA는 이 주소의 웹 앱을 연다. 무료 정적 호스팅(Cloudflare Pages, Netlify, GitHub Pages 등)을 쓸 수 있다. 주소는 반드시 `https://`여야 한다. |
+| **웹 주소(HTTPS)** | 앱이 실제로 올라가 있어야 한다. TWA는 이 주소의 웹 앱을 연다. 무료 정적 호스팅(Render, Cloudflare Pages, Netlify, GitHub Pages 등)을 쓸 수 있다. 주소는 반드시 `https://`여야 한다. |
 | **패키지 이름** | 예: `com.내이름.drawingapp`. **플레이에 한 번 올리면 절대 바꿀 수 없다.** 소문자·숫자·점만 쓰고, 다른 사람이 쓰는 이름은 안 된다. |
 | **AI 포함 여부** | **결정됨: AI를 뺀 출시(모든 연령 대상).** `npm run build`가 기본으로 AI 코드를 뺀다. |
 
