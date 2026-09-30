@@ -4,10 +4,22 @@
  * 하지 않는 일: IndexedDB(그림 저장소)는 건드리지 않는다. 그래서 앱을 업데이트해도 그림은 그대로다.
  * 다른 사이트(예: 구글 AI)로 가는 요청은 가로채지 않는다.
  */
-const VERSION = '__VERSION__'
+const VERSION = '76f77e2e86a5'
 const PREFIX = 'drawing-app-'
 const CACHE = PREFIX + VERSION
-const PRECACHE = __PRECACHE__
+const PRECACHE = [
+  "./",
+  "./assets/index-CQaHzpqi.js",
+  "./assets/index-IgwW22vj.css",
+  "./favicon.svg",
+  "./icons/apple-touch-icon.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./privacy.html"
+]
 
 self.addEventListener('install', (event) => {
   // 새 버전은 "대기" 상태로 두고, 사용자가 업데이트를 누르면 그때 넘어간다(그리는 도중에 바뀌지 않게).
