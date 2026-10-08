@@ -64,6 +64,17 @@ function cloneLayers(layers: readonly LayerInfo[]): LayerInfo[] {
 }
 
 /**
+ * 이 획에 적용할 손떨림 보정 값(0이면 꺼짐). 사용자가 고른 값(획의 opts.stabilize)이 있으면 그것을,
+ * 없으면 도구 기본값(리노펜 등)을 쓴다. 보정은 입력할 때 점을 만들면서 적용되고 그 점이 획에 저장되므로,
+ * 다시 그릴 때는 이 값을 쓰지 않는다.
+ */
+function stabilizeOf(stroke: Stroke, def: ToolDef): number {
+  const chosen = stroke.opts?.stabilize
+  const v = typeof chosen === 'number' && Number.isFinite(chosen) ? chosen : (def.line?.stabilize ?? 0)
+  return Math.min(0.9, Math.max(0, v))
+}
+
+/**
  * 그림 한 장의 그리기 상태(레이어 여러 장).
  *
  * - 레이어마다 그림 크기의 캔버스가 있다. 캔버스는 투명하게 두고 종이 색은 화면에서 따로 깐다.
@@ -250,7 +261,7 @@ export class DrawingSession {
     const cur = this.current
     if (!cur || points.length === 0) return
     const { stroke, def } = cur
-    const smooth = def.line?.stabilize ?? 0
+    const smooth = stabilizeOf(stroke, def)
     for (const raw of points) {
       cur.lastRaw = raw
       if (smooth > 0) {
@@ -293,7 +304,7 @@ export class DrawingSession {
     const target = this.liveEntry(cur.layerId).ctx
 
     // 손떨림 보정으로 뒤처진 끝을 실제 마지막 입력 위치까지 이어 준다.
-    if ((def.line?.stabilize ?? 0) > 0) {
+    if (stabilizeOf(stroke, def) > 0) {
       const last = stroke.points[stroke.points.length - 1]
       if (last.x !== cur.lastRaw.x || last.y !== cur.lastRaw.y) stroke.points.push(cur.lastRaw)
     }

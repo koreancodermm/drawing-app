@@ -25,7 +25,16 @@ describe('makeStroke', () => {
 
   it('그 도구에 없는 옵션은 담지 않는다', () => {
     const s = makeStroke(getTool('ballpoint')!, '#000000', undefined, pt, env)
-    expect(Object.keys(s.opts!).sort()).toEqual(['cx', 'cy', 'dpi', 'seed'])
+    expect(Object.keys(s.opts!).sort()).toEqual(['cx', 'cy', 'dpi', 'seed', 'stabilize'])
+    expect(s.opts).not.toHaveProperty('opacity')
+    expect(s.opts).not.toHaveProperty('grain')
+  })
+
+  it('질감 도구는 종이 결 값을, 펜은 손떨림 보정 값을 획에 담는다(사용자가 고른 값이 우선)', () => {
+    expect(makeStroke(getTool('pencil')!, '#000', undefined, pt, env).opts).toMatchObject({ grain: 0.7 })
+    expect(makeStroke(getTool('pencil')!, '#000', { size: 4, grain: 0.2 }, pt, env).opts).toMatchObject({ grain: 0.2 })
+    expect(makeStroke(getTool('liner')!, '#000', undefined, pt, env).opts).toMatchObject({ stabilize: 0.6 })
+    expect(makeStroke(getTool('ballpoint')!, '#000', { size: 3, stabilize: 0.5 }, pt, env).opts).toMatchObject({ stabilize: 0.5 })
   })
 
   it('선택 영역이 있으면 획에 담고, 선택·스포이드 같은 도구에는 담지 않는다', () => {

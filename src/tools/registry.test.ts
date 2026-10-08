@@ -66,7 +66,7 @@ describe('도구 목록', () => {
 
   it('지우개는 둥근/네모 옵션, 도형은 선 모양 옵션처럼 도구에 맞는 옵션만 보인다', () => {
     expect(getTool('eraser')?.options).toContain('eraserShape')
-    expect(getTool('ballpoint')?.options).toEqual(['size'])
+    expect(getTool('ballpoint')?.options).toEqual(['size', 'stabilize'])
     expect(getTool('rect')?.options).toEqual(expect.arrayContaining(['lineStyle', 'fill']))
     expect(getTool('bucket')?.options).toContain('tolerance')
     expect(getTool('hand')?.options).toEqual([])

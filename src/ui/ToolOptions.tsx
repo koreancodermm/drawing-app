@@ -23,6 +23,8 @@ const DEFAULT_LABEL: Record<OptionKey, string> = {
   step: '칸 크기(mm)',
   eraserShape: '지우개 모양',
   font: '글꼴',
+  grain: '종이 결',
+  stabilize: '손떨림 보정',
 }
 
 interface Props {
@@ -54,7 +56,7 @@ export default function ToolOptions({ def, settings, color2, onChange, onColor2,
   )
 
   const range = (
-    key: 'opacity' | 'softness' | 'tolerance' | 'sides',
+    key: 'opacity' | 'softness' | 'tolerance' | 'sides' | 'grain' | 'stabilize',
     min: number,
     max: number,
     step: number,
@@ -111,6 +113,10 @@ export default function ToolOptions({ def, settings, color2, onChange, onColor2,
             return range('opacity', 0.05, 1, 0.05, (v) => `${Math.round(v * 100)}%`)
           case 'softness':
             return range('softness', 0, 1, 0.05, (v) => `${Math.round(v * 100)}%`)
+          case 'grain':
+            return range('grain', 0, 1, 0.05, (v) => (v === 0 ? '없음' : `${Math.round(v * 100)}%`))
+          case 'stabilize':
+            return range('stabilize', 0, 0.9, 0.05, (v) => (v === 0 ? '꺼짐' : `${Math.round((v / 0.9) * 100)}%`))
           case 'tolerance':
             return range('tolerance', 0, 128, 1, (v) => String(Math.round(v)))
           case 'sides':

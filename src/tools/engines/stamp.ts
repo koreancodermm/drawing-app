@@ -1,5 +1,6 @@
 import type { Stroke } from '../../canvas/stroke'
 import { rgba } from '../geom'
+import { paperGrain, tooth, washCloud } from '../grain'
 import { rand01 } from '../prng'
 import type { ToolDef } from '../types'
 import { clamp, num } from './common'
@@ -73,6 +74,15 @@ function stampOne(ctx: CanvasRenderingContext2D, stroke: Stroke, def: ToolDef, p
     y += (rand01(seed, idx, 3) - 0.5) * 2 * spread
   }
 
+  // 종이 결 옵션(grain)이 들어 있는 획만 새 질감으로 그린다. 옵션이 없는 옛 저장본의 획은 예전 그대로 다시 그려
+  // 앱을 업데이트해도 이미 그린 그림의 모양이 바뀌지 않는다.
+  const modern = typeof opts?.grain === 'number'
+  const gs = modern ? clamp(num(opts, 'grain', 0), 0, 1) : 0
+  // 수채·수묵처럼 물감이 번지는 붓: 같은 자리에서도 농도가 고르지 않고 군데군데 고이거나 옅어진다.
+  if (modern && gs > 0 && cfg.tip === 'soft' && !erasing) {
+    alpha = clamp(alpha * (1 + gs * 1.1 * (washCloud(x, y) - 0.5)), 0, 1)
+  }
+
   const color = erasing ? '#000000' : stroke.color
   ctx.fillStyle = color
 
@@ -85,21 +95,77 @@ function stampOne(ctx: CanvasRenderingContext2D, stroke: Stroke, def: ToolDef, p
       break
     }
     case 'grain': {
-      const dots = clamp(Math.round(r * r * 0.14), 4, 90)
       const dotSize = Math.max(0.8, Math.min(2.4, r * 0.28))
+      if (!modern) {
+        const dots = clamp(Math.round(r * r * 0.14), 4, 90)
+        for (let d = 0; d < dots; d++) {
+          const ang = rand01(seed, idx, 10 + d * 3) * Math.PI * 2
+          const dist = Math.sqrt(rand01(seed, idx, 11 + d * 3)) * r
+          ctx.globalAlpha = clamp(alpha * (0.35 + 0.65 * rand01(seed, idx, 12 + d * 3)), 0, 1)
+          const s = dotSize * (0.7 + 0.6 * rand01(seed, idx, 13 + d * 3))
+          ctx.fillRect(x + Math.cos(ang) * dist - s / 2, y + Math.sin(ang) * dist - s / 2, s, s)
+        }
+        break
+      }
+      // 종이 결을 타고 묻는다: 종이가 솟은 곳(paperGrain이 작은 곳)에 먼저 묻고, 세게(진하게) 눌러야 움푹한 곳(큰 곳)까지 채워진다.
+      // 일부 알갱이는 걸러지므로 그만큼 알갱이를 더 흩뿌린다.
+      const dots = clamp(Math.round(r * r * 0.14 * (1 + 1.2 * gs)), 4, 130)
+      const level = 0.15 + 0.75 * alpha
       for (let d = 0; d < dots; d++) {
         const ang = rand01(seed, idx, 10 + d * 3) * Math.PI * 2
         const dist = Math.sqrt(rand01(seed, idx, 11 + d * 3)) * r
-        ctx.globalAlpha = clamp(alpha * (0.35 + 0.65 * rand01(seed, idx, 12 + d * 3)), 0, 1)
+        const px = x + Math.cos(ang) * dist
+        const py = y + Math.sin(ang) * dist
+        const caught = 1 - gs + gs * tooth(paperGrain(px, py), level)
+        if (caught <= 0.02) continue
+        ctx.globalAlpha = clamp((0.55 + 0.45 * rand01(seed, idx, 12 + d * 3)) * Math.min(1, 0.45 + alpha) * caught, 0, 1)
         const s = dotSize * (0.7 + 0.6 * rand01(seed, idx, 13 + d * 3))
-        ctx.fillRect(x + Math.cos(ang) * dist - s / 2, y + Math.sin(ang) * dist - s / 2, s, s)
+        ctx.fillRect(px - s / 2, py - s / 2, s, s)
       }
       break
     }
     case 'bristle': {
-      const bristles = clamp(Math.round(stroke.size / 2.5), 4, 30)
       const nx = -pos.dirY
       const ny = pos.dirX
+      if (modern) {
+        // 털마다 자리·물감 양이 획 내내 고정되어 있고, 털 한 가닥을 이전 도장 자리에서 지금 자리까지 이은 선으로 그려서
+        // 붓을 끌면 끊김 없는 줄무늬(붓 자국)가 남는다. 길게 그을수록 물감이 떨어져 물감이 적은 털부터 옅어진다(마른 붓).
+        const bristles = clamp(Math.round(stroke.size / 2.2), 5, 36)
+        const unit = r / bristles // 털 사이 간격의 절반 정도
+        const lineW = Math.max(0.8, unit * 2.4) // 이웃한 털과 조금씩 겹쳐서 면은 덮이고 줄무늬는 은은하게 남는다
+        const dry = Math.min(0.5, idx / 260) * (0.4 + 0.6 * gs)
+        ctx.save()
+        ctx.strokeStyle = color
+        ctx.lineWidth = lineW
+        ctx.lineCap = 'butt'
+        for (let i = 0; i < bristles; i++) {
+          const t = ((i + 0.5) / bristles) * 2 - 1
+          // 털의 자리는 획 내내 거의 같지만, 줄이 자를 댄 듯 반듯하지 않게 아주 천천히 물결친다.
+          const wobble = Math.sin(idx * 0.08 + rand01(seed, 0, 180 + i) * 6.283) * unit * 0.18
+          const off = t * r + (rand01(seed, 0, 20 + i) - 0.5) * unit + wobble
+          const load = 0.55 + 0.45 * rand01(seed, 0, 140 + i)
+          const wet = clamp((load - dry) / 0.25, 0, 1)
+          if (wet <= 0) continue
+          const bx = pos.x + nx * off
+          const by = pos.y + ny * off
+          const qx = pos.prevX + nx * off
+          const qy = pos.prevY + ny * off
+          const onPaper = gs > 0 ? 1 - gs * 0.55 + gs * 0.55 * tooth(paperGrain(bx, by), 0.2 + 0.7 * alpha, 0.2) : 1
+          ctx.globalAlpha = clamp(alpha * (0.65 + 0.35 * rand01(seed, 0, 100 + i)) * wet * onPaper, 0, 1)
+          ctx.beginPath()
+          if (Math.hypot(bx - qx, by - qy) < 0.01) {
+            ctx.arc(bx, by, lineW / 2, 0, Math.PI * 2)
+            ctx.fill()
+          } else {
+            ctx.moveTo(qx, qy)
+            ctx.lineTo(bx, by)
+            ctx.stroke()
+          }
+        }
+        ctx.restore()
+        break
+      }
+      const bristles = clamp(Math.round(stroke.size / 2.5), 4, 30)
       const dotR = Math.max(0.7, (r / bristles) * 1.15)
       for (let i = 0; i < bristles; i++) {
         const t = ((i + 0.5) / bristles) * 2 - 1
