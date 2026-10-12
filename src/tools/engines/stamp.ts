@@ -132,11 +132,9 @@ function stampOne(ctx: CanvasRenderingContext2D, stroke: Stroke, def: ToolDef, p
         // 붓을 끌면 끊김 없는 줄무늬(붓 자국)가 남는다. 길게 그을수록 물감이 떨어져 물감이 적은 털부터 옅어진다(마른 붓).
         const bristles = clamp(Math.round(stroke.size / 2.2), 5, 36)
         const unit = r / bristles // 털 사이 간격의 절반 정도
-        const lineW = Math.max(0.8, unit * 2.4) // 이웃한 털과 조금씩 겹쳐서 면은 덮이고 줄무늬는 은은하게 남는다
         const dry = Math.min(0.5, idx / 260) * (0.4 + 0.6 * gs)
         ctx.save()
         ctx.strokeStyle = color
-        ctx.lineWidth = lineW
         ctx.lineCap = 'butt'
         for (let i = 0; i < bristles; i++) {
           const t = ((i + 0.5) / bristles) * 2 - 1
@@ -146,12 +144,15 @@ function stampOne(ctx: CanvasRenderingContext2D, stroke: Stroke, def: ToolDef, p
           const load = 0.55 + 0.45 * rand01(seed, 0, 140 + i)
           const wet = clamp((load - dry) / 0.25, 0, 1)
           if (wet <= 0) continue
+          // 털마다 굵기가 달라(이웃과 조금씩 겹치거나 틈이 생겨서) 면은 대체로 덮이고 줄무늬는 불규칙하게 남는다.
+          const lineW = Math.max(0.8, unit * (1.9 + 1.0 * rand01(seed, 0, 220 + i)))
+          ctx.lineWidth = lineW
           const bx = pos.x + nx * off
           const by = pos.y + ny * off
           const qx = pos.prevX + nx * off
           const qy = pos.prevY + ny * off
           const onPaper = gs > 0 ? 1 - gs * 0.55 + gs * 0.55 * tooth(paperGrain(bx, by), 0.2 + 0.7 * alpha, 0.2) : 1
-          ctx.globalAlpha = clamp(alpha * (0.65 + 0.35 * rand01(seed, 0, 100 + i)) * wet * onPaper, 0, 1)
+          ctx.globalAlpha = clamp(alpha * (0.4 + 0.6 * rand01(seed, 0, 100 + i)) * wet * onPaper, 0, 1)
           ctx.beginPath()
           if (Math.hypot(bx - qx, by - qy) < 0.01) {
             ctx.arc(bx, by, lineW / 2, 0, Math.PI * 2)
