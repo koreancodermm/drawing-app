@@ -33,6 +33,7 @@ import FilePanel from './FilePanel'
 import LayerPanel from './LayerPanel'
 import PhotoAdjust from './PhotoAdjust'
 import SelectionPanel from './SelectionPanel'
+import { FitIcon, HomeIcon, RedoIcon, UndoIcon, ZoomInIcon, ZoomOutIcon } from './icons'
 import ThemeToggle from './ThemeToggle'
 import ToolOptions from './ToolOptions'
 import ToolPanel from './ToolPanel'
@@ -976,8 +977,9 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
   return (
     <div className="draw">
       <header className="draw__bar">
-        <button className="btn" onClick={() => void goHome()} title="자동 저장 후 홈으로">
-          홈
+        <button className="btn ibtn" onClick={() => void goHome()} title="자동 저장 후 홈으로">
+          <HomeIcon />
+          <span className="ibtn__t">홈</span>
         </button>
         <span className="draw__name" title={drawing.name}>
           {drawing.name}
@@ -986,28 +988,35 @@ export default function DrawingScreen({ drawing, recentColors, onRecentColorsCha
           {STATUS_LABEL[status]}
         </output>
         <span className="draw__spacer" />
-        <button className="btn" onClick={undo} disabled={!historyState.canUndo} title="되돌리기 (Ctrl+Z)">
-          되돌리기
-        </button>
-        <button className="btn" onClick={redo} disabled={!historyState.canRedo} title="다시하기 (Ctrl+Shift+Z)">
-          다시하기
-        </button>
+        <div className="seg" role="group" aria-label="되돌리기와 다시하기">
+          <button className="btn ibtn" onClick={undo} disabled={!historyState.canUndo} title="되돌리기 (Ctrl+Z)">
+            <UndoIcon />
+            <span className="ibtn__t">되돌리기</span>
+          </button>
+          <button className="btn ibtn" onClick={redo} disabled={!historyState.canRedo} title="다시하기 (Ctrl+Shift+Z)">
+            <RedoIcon />
+            <span className="ibtn__t">다시하기</span>
+          </button>
+        </div>
         <span className="draw__spacer" />
-        <button className="btn" onClick={() => zoomBy(1 / 1.25)} aria-label="축소">
-          −
-        </button>
-        <output className="draw__zoom" aria-label="확대 비율">
-          {Math.round(view.zoom * 100)}%
-        </output>
-        <button className="btn" onClick={() => zoomBy(1.25)} aria-label="확대">
-          +
-        </button>
-        <button className="btn" onClick={zoomTo100}>
-          100%
-        </button>
-        <button className="btn" onClick={fit}>
-          맞춤
-        </button>
+        <div className="seg" role="group" aria-label="화면 확대">
+          <button className="btn ibtn" onClick={() => zoomBy(1 / 1.25)} aria-label="축소" title="축소">
+            <ZoomOutIcon />
+          </button>
+          <output className="draw__zoom" aria-label="확대 비율">
+            {Math.round(view.zoom * 100)}%
+          </output>
+          <button className="btn ibtn" onClick={() => zoomBy(1.25)} aria-label="확대" title="확대">
+            <ZoomInIcon />
+          </button>
+          <button className="btn" onClick={zoomTo100} title="실제 크기(100%)">
+            100%
+          </button>
+          <button className="btn ibtn" onClick={fit} title="화면에 맞춤">
+            <FitIcon />
+            <span className="ibtn__t">맞춤</span>
+          </button>
+        </div>
         <ThemeToggle />
       </header>
 
